@@ -33,6 +33,7 @@ if (process.env.OPENAI_API_KEY) {
 const activeChats = new Map();
 const adminSessions = new Set();
 const userSockets = new Map(); // Map userId to socketId
+const chatStatus = new Map(); // Map userId to chat status (open/closed)
 
 // AI response function
 async function getAIResponse(userMessage, chatHistory = []) {
@@ -181,6 +182,7 @@ app.prepare().then(() => {
       // Store chat history
       if (!activeChats.has(messageData.userId)) {
         activeChats.set(messageData.userId, []);
+        chatStatus.set(messageData.userId, 'open'); // Set initial status as open
       }
       
       const chatHistory = activeChats.get(messageData.userId);
@@ -235,7 +237,8 @@ app.prepare().then(() => {
         userId,
         messages,
         lastActivity: messages[messages.length - 1]?.timestamp,
-        socketId: userSockets.get(userId)
+        socketId: userSockets.get(userId),
+        status: chatStatus.get(userId) || 'open'
       }));
       
       socket.emit('chat-history', allChats);
@@ -262,6 +265,46 @@ app.prepare().then(() => {
           }
         });
       }
+    });
+
+    // Handle chat status change
+    socket.on('change-chat-status', (data) => {
+      console.log('Chat status change:', data);
+      const { userId, status, sender } = data;
+      
+      // Update chat status
+      chatStatus.set(userId, status);
+      
+      // Create system message
+      const systemMessage = {
+        id: `system-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        text: status === 'closed' 
+          ? `Chat ditutup oleh ${sender === 'user' ? 'user' : 'admin'}` 
+          : `Chat dibuka kembali oleh ${sender === 'user' ? 'user' : 'admin'}`,
+        sender: 'system',
+        userId: userId,
+        timestamp: new Date().toISOString(),
+      };
+      
+      // Store system message in chat history
+      if (activeChats.has(userId)) {
+        activeChats.get(userId).push(systemMessage);
+      }
+      
+      // Send status update to user
+      const userSocketId = userSockets.get(userId);
+      if (userSocketId) {
+        io.to(userSocketId).emit('chat-status-changed', { status, message: systemMessage });
+      }
+      
+      // Send status update to all admins
+      adminSessions.forEach(adminSocketId => {
+        io.to(adminSocketId).emit('chat-status-changed', { 
+          userId, 
+          status, 
+          message: systemMessage 
+        });
+      });
     });
 
     // Handle disconnection

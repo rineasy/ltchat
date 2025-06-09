@@ -79,6 +79,37 @@ export default function AdminPanel() {
       setActiveChats(chats.sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity)));
     });
 
+    newSocket.on('chat-status-changed', (data) => {
+      // Update chat status in active chats
+      setActiveChats(prev => {
+        const updated = [...prev];
+        const chatIndex = updated.findIndex(chat => chat.userId === data.userId);
+        
+        if (chatIndex >= 0) {
+          updated[chatIndex] = {
+            ...updated[chatIndex],
+            status: data.status,
+            messages: data.message ? [...updated[chatIndex].messages, data.message] : updated[chatIndex].messages,
+            lastActivity: data.message ? data.message.timestamp : updated[chatIndex].lastActivity
+          };
+        }
+        
+        return updated.sort((a, b) => new Date(b.lastActivity) - new Date(a.lastActivity));
+      });
+
+      // Update selected chat if it matches
+      setSelectedChat(prev => {
+        if (prev && prev.userId === data.userId) {
+          return {
+            ...prev,
+            status: data.status,
+            messages: data.message ? [...prev.messages, data.message] : prev.messages
+          };
+        }
+        return prev;
+      });
+    });
+
     newSocket.on('admin-message-update', (messageData) => {
       // Handle admin messages from other admin sessions
       const uniqueMessageData = {
@@ -180,6 +211,16 @@ export default function AdminPanel() {
 
   const selectChat = (chat) => {
     setSelectedChat(chat);
+  };
+
+  const changeChatStatus = (userId, newStatus) => {
+    if (socket) {
+      socket.emit('change-chat-status', {
+        userId: userId,
+        status: newStatus,
+        sender: 'admin'
+      });
+    }
   };
 
   const sendMessage = (e) => {
@@ -473,6 +514,25 @@ export default function AdminPanel() {
                             }`}>
                               {chat.messages.length} message{chat.messages.length > 1 ? 's' : ''}
                             </span>
+                            {/* Status Indicator */}
+                            <div className={`flex items-center space-x-1 ${
+                              isSelected ? 'text-white/80' : ''
+                            }`}>
+                              <div className={`w-2 h-2 rounded-full ${
+                                chat.status === 'closed' 
+                                  ? 'bg-red-500' 
+                                  : 'bg-green-500'
+                              }`}></div>
+                              <span className={`text-xs ${
+                                isSelected 
+                                  ? 'text-white/70' 
+                                  : chat.status === 'closed'
+                                  ? isDarkMode ? 'text-red-400' : 'text-red-600'
+                                  : isDarkMode ? 'text-green-400' : 'text-green-600'
+                              }`}>
+                                {chat.status === 'closed' ? 'Closed' : 'Open'}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -492,25 +552,71 @@ export default function AdminPanel() {
               <div className={`${
                 isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
               } border-b p-4 flex-shrink-0`}>
-                <div className="flex items-center space-x-3">
-                  <div className={`w-10 h-10 ${
-                    isDarkMode ? 'bg-blue-600' : 'bg-blue-500'
-                  } rounded-full flex items-center justify-center`}>
-                    <span className="text-white text-sm font-medium">
-                      {selectedChat.messages[0]?.userName?.[0]?.toUpperCase() || 'U'}
-                    </span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className={`w-10 h-10 ${
+                      isDarkMode ? 'bg-blue-600' : 'bg-blue-500'
+                    } rounded-full flex items-center justify-center`}>
+                      <span className="text-white text-sm font-medium">
+                        {selectedChat.messages[0]?.userName?.[0]?.toUpperCase() || 'U'}
+                      </span>
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-3">
+                        <h3 className={`font-semibold ${
+                          isDarkMode ? 'text-white' : 'text-slate-900'
+                        }`}>
+                          {selectedChat.messages[0]?.userName || 'Unknown User'}
+                        </h3>
+                        {/* Status Indicator */}
+                        <div className="flex items-center space-x-1">
+                          <div className={`w-2 h-2 rounded-full ${
+                            selectedChat.status === 'closed' ? 'bg-red-500' : 'bg-green-500'
+                          }`}></div>
+                          <span className={`text-xs font-medium ${
+                            selectedChat.status === 'closed'
+                              ? isDarkMode ? 'text-red-400' : 'text-red-600'
+                              : isDarkMode ? 'text-green-400' : 'text-green-600'
+                          }`}>
+                            {selectedChat.status === 'closed' ? 'Closed' : 'Open'}
+                          </span>
+                        </div>
+                      </div>
+                      <p className={`text-sm ${
+                        isDarkMode ? 'text-slate-400' : 'text-slate-500'
+                      }`}>
+                        {selectedChat.messages.length} message{selectedChat.messages.length > 1 ? 's' : ''}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className={`font-semibold ${
-                      isDarkMode ? 'text-white' : 'text-slate-900'
-                    }`}>
-                      {selectedChat.messages[0]?.userName || 'Unknown User'}
-                    </h3>
-                    <p className={`text-sm ${
-                      isDarkMode ? 'text-slate-400' : 'text-slate-500'
-                    }`}>
-                      {selectedChat.messages.length} message{selectedChat.messages.length > 1 ? 's' : ''}
-                    </p>
+                  
+                  {/* Status Control Button */}
+                  <div className="flex items-center space-x-2">
+                    {selectedChat.status === 'open' ? (
+                      <button
+                        onClick={() => changeChatStatus(selectedChat.userId, 'closed')}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors duration-200 ${
+                          isDarkMode 
+                            ? 'bg-red-600 hover:bg-red-700 text-white' 
+                            : 'bg-red-500 hover:bg-red-600 text-white'
+                        }`}
+                        title="Close chat"
+                      >
+                        ✕ Close Chat
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => changeChatStatus(selectedChat.userId, 'open')}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors duration-200 ${
+                          isDarkMode 
+                            ? 'bg-green-600 hover:bg-green-700 text-white' 
+                            : 'bg-green-500 hover:bg-green-600 text-white'
+                        }`}
+                        title="Reopen chat"
+                      >
+                        🔄 Reopen Chat
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -541,11 +647,15 @@ export default function AdminPanel() {
                                ? isDarkMode ? 'bg-emerald-600 text-white' : 'bg-emerald-500 text-white'
                                : msg.sender === 'ai' 
                                ? isDarkMode ? 'bg-purple-600 text-white' : 'bg-purple-500 text-white'
+                               : msg.sender === 'system'
+                               ? isDarkMode ? 'bg-yellow-600 text-white' : 'bg-yellow-500 text-white'
                                : isDarkMode ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white'
                            } ${msg.sender === 'admin' ? 'ml-3' : 'mr-3'}`}>
                              {msg.sender === 'admin' 
                                ? '👨‍💼' 
-                               : msg.sender === 'ai' ? '🤖' : msg.userName?.[0]?.toUpperCase()
+                               : msg.sender === 'ai' ? '🤖' 
+                               : msg.sender === 'system' ? '📋'
+                               : msg.userName?.[0]?.toUpperCase()
                              }
                            </div>
 
@@ -565,9 +675,13 @@ export default function AdminPanel() {
                               <div className={`text-xs font-medium mb-1 ${
                                 msg.sender === 'ai' 
                                   ? isDarkMode ? 'text-purple-300' : 'text-purple-600'
+                                  : msg.sender === 'system'
+                                  ? isDarkMode ? 'text-yellow-300' : 'text-yellow-600'
                                   : isDarkMode ? 'text-blue-300' : 'text-blue-600'
                               }`}>
-                                {msg.sender === 'ai' ? 'AI Assistant' : msg.userName || 'User'}
+                                {msg.sender === 'ai' ? 'AI Assistant' 
+                                 : msg.sender === 'system' ? 'System'
+                                 : msg.userName || 'User'}
                               </div>
                             )}
                             

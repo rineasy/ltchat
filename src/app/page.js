@@ -15,6 +15,7 @@ export default function Home() {
   const [isTyping, setIsTyping] = useState(false);
   const [adminOnline, setAdminOnline] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [chatStatus, setChatStatus] = useState('open');
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const userId = useRef(null);
@@ -85,6 +86,13 @@ export default function Home() {
       setAdminOnline(status.online);
     });
 
+    newSocket.on('chat-status-changed', (data) => {
+      setChatStatus(data.status);
+      if (data.message) {
+        setMessages(prev => [...prev, data.message]);
+      }
+    });
+
     setSocket(newSocket);
 
     return () => newSocket.close();
@@ -115,6 +123,30 @@ export default function Home() {
       socket.emit('user-message', messageData);
       setMessages(prev => [...prev, messageData]);
       setMessage('');
+    }
+  };
+
+  const markAsResolved = () => {
+    console.log('markAsResolved clicked, socket:', !!socket, 'userId:', userId.current);
+    if (socket) {
+      console.log('Emitting change-chat-status event');
+      socket.emit('change-chat-status', {
+        userId: userId.current,
+        status: 'closed',
+        sender: 'user'
+      });
+    } else {
+      console.log('Socket not available');
+    }
+  };
+
+  const reopenChat = () => {
+    if (socket) {
+      socket.emit('change-chat-status', {
+        userId: userId.current,
+        status: 'open',
+        sender: 'user'
+      });
     }
   };
 
@@ -340,11 +372,49 @@ export default function Home() {
                         adminOnline ? 'Admin available' : 'AI Assistant'
                       ) : 'Connecting...'}
                     </p>
+                    {/* Chat Status Indicator */}
+                    {chatStatus === 'closed' && (
+                      <div className="flex items-center space-x-1">
+                        <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                        <span className={`text-xs ${
+                          isDarkMode ? 'text-red-400' : 'text-red-600'
+                        }`}>
+                          Closed
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
               
               <div className="flex items-center space-x-3">
+                {/* Chat Status Button */}
+                {chatStatus === 'open' ? (
+                  <button
+                    onClick={markAsResolved}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors duration-200 ${
+                      isDarkMode 
+                        ? 'bg-green-600 hover:bg-green-700 text-white' 
+                        : 'bg-green-500 hover:bg-green-600 text-white'
+                    }`}
+                    title="Mark as resolved"
+                  >
+                    ✓ Masalah Terselesaikan
+                  </button>
+                ) : (
+                  <button
+                    onClick={reopenChat}
+                    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors duration-200 ${
+                      isDarkMode 
+                        ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                        : 'bg-blue-500 hover:bg-blue-600 text-white'
+                    }`}
+                    title="Reopen chat"
+                  >
+                    🔄 Buka Kembali
+                  </button>
+                )}
+
                 <button
                   onClick={toggleDarkMode}
                   className={`p-2 rounded-lg transition-colors duration-200 ${
@@ -364,7 +434,6 @@ export default function Home() {
                     </svg>
                   )}
                 </button>
-                
 
               </div>
             </div>
@@ -422,11 +491,15 @@ export default function Home() {
                           ? isDarkMode ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white'
                           : msg.sender === 'ai' 
                           ? isDarkMode ? 'bg-purple-600 text-white' : 'bg-purple-500 text-white'
+                          : msg.sender === 'system'
+                          ? isDarkMode ? 'bg-yellow-600 text-white' : 'bg-yellow-500 text-white'
                           : isDarkMode ? 'bg-emerald-600 text-white' : 'bg-emerald-500 text-white'
                       } ${msg.sender === 'user' ? 'ml-3' : 'mr-3'}`}>
                         {msg.sender === 'user' 
                           ? userName[0]?.toUpperCase() 
-                          : msg.sender === 'ai' ? '🤖' : '👨‍💼'
+                          : msg.sender === 'ai' ? '🤖' 
+                          : msg.sender === 'system' ? '📋'
+                          : '👨‍💼'
                         }
                       </div>
 
@@ -446,9 +519,13 @@ export default function Home() {
                           <div className={`text-xs font-medium mb-1 ${
                             msg.sender === 'ai' 
                               ? isDarkMode ? 'text-purple-300' : 'text-purple-600'
+                              : msg.sender === 'system'
+                              ? isDarkMode ? 'text-yellow-300' : 'text-yellow-600'
                               : isDarkMode ? 'text-emerald-300' : 'text-emerald-600'
                           }`}>
-                            {msg.sender === 'ai' ? 'AI Assistant' : 'Admin'}
+                            {msg.sender === 'ai' ? 'AI Assistant' 
+                             : msg.sender === 'system' ? 'System' 
+                             : 'Admin'}
                           </div>
                         )}
                         
