@@ -24,3 +24,345 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Custom animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    max-height: 200px;
+  }
+}
+
+@keyframes bounce-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s ease-out;
+}
+
+.animate-slide-down {
+  animation: slide-down 0.3s ease-out;
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.5s ease-out;
+}
+
+.animate-pulse {
+  animation: pulse 2s infinite;
+}
+
+/* Smooth scrolling for chat messages */
+.chat-messages {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+.chat-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 dark:bg-slate-600 rounded-full;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+  @apply bg-slate-400 dark:bg-slate-500;
+}
+
+/* Glassmorphism effect */
+.glass {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+/* Typing indicator dots */
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+  }
+  40% {
+    transform: scale(1);
+  }
+}
+
+.animate-bounce {
+  animation: bounce 1s infinite;
+}
+
+/* Message bubble hover effects */
+.message-bubble {
+  transition: all 0.2s ease;
+}
+
+.message-bubble:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Focus states */
+input:focus, textarea:focus, button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Responsive improvements */
+@media (max-width: 640px) {
+  .chat-container {
+    margin: 0.5rem;
+    height: calc(100vh - 1rem);
+  }
+  
+  .max-w-xs {
+    max-width: calc(100vw - 6rem);
+  }
+  
+  .max-w-lg {
+    max-width: calc(100vw - 4rem);
+  }
+}
+
+/* Custom radio button styles */
+.radio-option {
+  transition: all 0.2s ease;
+}
+
+.radio-option:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Improved button styles */
+.btn-primary {
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Dark mode transitions */
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+/* Loading states */
+.loading-dots::after {
+  content: '';
+  animation: loading-dots 1.5s infinite;
+}
+
+@keyframes loading-dots {
+  0%, 20% { content: ''; }
+  40% { content: '.'; }
+  60% { content: '..'; }
+  80%, 100% { content: '...'; }
+}
+
+/* Message timestamp fade */
+.message-timestamp {
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.message-bubble:hover .message-timestamp {
+  opacity: 1;
+}
+
+/* Connection status indicator */
+.status-indicator {
+  animation: pulse 2s infinite;
+}
+
+.status-indicator.connected {
+  animation: none;
+}
+
+/* Improved form styling */
+.form-input {
+  transition: all 0.2s ease;
+}
+
+.form-input:focus {
+  transform: translateY(-1px);
+}
+
+/* Better text selection */
+::selection {
+  background-color: rgba(59, 130, 246, 0.3);
+  color: inherit;
+}
+
+/* Improved accessibility */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .chat-messages {
+    scroll-behavior: auto;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .border-slate-200 {
+    border-color: #000 !important;
+  }
+  
+  .border-slate-600 {
+    border-color: #fff !important;
+  }
+}
+
+/* AI Message HTML Styling */
+.ai-message-content {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  word-break: break-words;
+}
+
+.ai-message-content strong {
+  font-weight: 600;
+  color: inherit;
+}
+
+.ai-message-content ul {
+  margin: 0.5rem 0;
+  padding-left: 1rem;
+  list-style-type: disc;
+}
+
+.ai-message-content li {
+  margin: 0.25rem 0;
+}
+
+.ai-message-content p {
+  margin: 0.5rem 0;
+}
+
+.ai-message-content p:first-child {
+  margin-top: 0;
+}
+
+.ai-message-content p:last-child {
+  margin-bottom: 0;
+}
+
+.ai-message-content a {
+  color: #3b82f6;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.ai-message-content a:hover {
+  color: #1d4ed8;
+}
+
+/* Dark mode AI message styling */
+.dark .ai-message-content a {
+  color: #60a5fa;
+}
+
+.dark .ai-message-content a:hover {
+  color: #93c5fd;
+}
+
+.ai-message-content .highlight {
+  background-color: rgba(59, 130, 246, 0.1);
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
+}
+
+.ai-message-content .info-box {
+  background-color: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  margin: 0.5rem 0;
+}
+
+.dark .ai-message-content .info-box {
+  background-color: rgba(16, 185, 129, 0.05);
+  border-color: rgba(16, 185, 129, 0.15);
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .chat-messages {
+    overflow: visible !important;
+    height: auto !important;
+  }
+}
